@@ -6,7 +6,7 @@ variables:
     default: "dev"
 
 bundle:
-  name: "${var.project_name}"
+  name: "my_project"
 
 workspace:
   # Default workspace path; overridden by targets.
