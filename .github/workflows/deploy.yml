@@ -22,27 +22,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Check out the selected branch
+      # Checkout the selected branch
       - name: Checkout selected branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch }}
 
-      # Install the NEW Databricks CLI (v1) correctly
+      # Install the Databricks CLI (v1)
       - name: Install Databricks CLI v1
         run: |
           curl -fsSL https://raw.githubusercontent.com/databricks/cli/main/install.sh | bash
 
-      # Install Python SDK (optional but useful)
+      # Install Python SDK (optional)
       - name: Install Databricks Python SDK
         run: pip install databricks-sdk
 
-      # Set Databricks authentication env vars for CLI v1
-      - name: Set Databricks auth env vars
+      # Set Databricks auth env vars
+      - name: Set Databricks auth
         run: |
           echo "DATABRICKS_HOST=${{ secrets.DATABRICKS_HOST }}" >> $GITHUB_ENV
           echo "DATABRICKS_TOKEN=${{ secrets.DATABRICKS_TOKEN }}" >> $GITHUB_ENV
 
-      # Deploy the bundle to the selected target
+      # Deploy using ABSOLUTE PATH (bulletproof)
       - name: Deploy bundle
-        run: databricks bundle deploy --target ${{ github.event.inputs.target }}
+        run: $HOME/.databricks/bin/databricks bundle deploy --target ${{ github.event.inputs.target }}
