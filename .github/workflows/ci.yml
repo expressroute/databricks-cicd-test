@@ -13,7 +13,8 @@ jobs:
 
       - name: Install Databricks CLI & SDK
         run: |
-          pip install databricks-cli databricks-sdk
+          pip install databricks-sdk
+          pip install databricks
 
       - name: Validate bundle syntax
         run: databricks bundle validate
