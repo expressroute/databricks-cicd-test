@@ -9,7 +9,7 @@ on:
         default: "develop"
         type: string
       target:
-        description: "Target environment (dev or prd)"
+        description: "Bundle target (dev or prd)"
         required: true
         default: "dev"
         type: choice
@@ -27,15 +27,15 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch }}
 
-      - name: Install Databricks Python CLI + SDK
-        run: |
-          pip install databricks-cli
-          pip install databricks-sdk
+      # Official Databricks action: installs the correct CLI on PATH
+      - name: Setup Databricks CLI
+        uses: databricks/setup-cli@main
 
-      - name: Set Databricks auth env vars
-        run: |
-          echo "DATABRICKS_HOST=${{ secrets.DATABRICKS_HOST }}" >> $GITHUB_ENV
-          echo "DATABRICKS_TOKEN=${{ secrets.DATABRICKS_TOKEN }}" >> $GITHUB_ENV
+      - name: Show CLI version (debug)
+        run: databricks -v
 
       - name: Deploy bundle
-        run: python -m databricks_cli.bundle.bundle_cli deploy --target ${{ github.event.inputs.target }}
+        run: databricks bundle deploy --target ${{ github.event.inputs.target }}
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
