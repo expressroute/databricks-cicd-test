@@ -29,11 +29,13 @@ jobs:
 
       - name: Install Databricks CLI & SDK
         run: |
-          pip install databricks-cli databricks-sdk
+          pip install databricks-sdk
+          pip install databricks
 
-      - name: Configure Databricks auth
+      - name: Set Databricks auth env vars
         run: |
-          databricks configure --token --host "${{ secrets.DATABRICKS_HOST }}" <<< "${{ secrets.DATABRICKS_TOKEN }}"
+          echo "DATABRICKS_HOST=${{ secrets.DATABRICKS_HOST }}" >> $GITHUB_ENV
+          echo "DATABRICKS_TOKEN=${{ secrets.DATABRICKS_TOKEN }}" >> $GITHUB_ENV
 
       - name: Deploy bundle
         run: databricks bundle deploy --target ${{ github.event.inputs.target }}
