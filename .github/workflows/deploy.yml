@@ -1,0 +1,39 @@
+name: Deploy Bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy from"
+        required: true
+        default: "develop"
+        type: string
+      target:
+        description: "Target environment (dev/prd)"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - prd
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Install Databricks CLI & SDK
+        run: |
+          pip install databricks-cli databricks-sdk
+
+      - name: Configure Databricks auth
+        run: |
+          databricks configure --token --host "${{ secrets.DATABRICKS_HOST }}" <<< "${{ secrets.DATABRICKS_TOKEN }}"
+
+      - name: Deploy bundle
+        run: databricks bundle deploy --target ${{ github.event.inputs.target }}
