@@ -9,7 +9,7 @@ on:
         default: "develop"
         type: string
       target:
-        description: "Target environment (dev/prd)"
+        description: "Target environment (dev or prd)"
         required: true
         default: "dev"
         type: choice
@@ -22,20 +22,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Check out the selected branch
       - name: Checkout selected branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch }}
 
-      - name: Install Databricks CLI & SDK
+      # Install the NEW Databricks CLI (v1) correctly
+      - name: Install Databricks CLI v1
         run: |
-          pip install databricks-sdk
-          pip install databricks
+          curl -fsSL https://raw.githubusercontent.com/databricks/cli/main/install.sh | bash
 
+      # Install Python SDK (optional but useful)
+      - name: Install Databricks Python SDK
+        run: pip install databricks-sdk
+
+      # Set Databricks authentication env vars for CLI v1
       - name: Set Databricks auth env vars
         run: |
           echo "DATABRICKS_HOST=${{ secrets.DATABRICKS_HOST }}" >> $GITHUB_ENV
           echo "DATABRICKS_TOKEN=${{ secrets.DATABRICKS_TOKEN }}" >> $GITHUB_ENV
 
+      # Deploy the bundle to the selected target
       - name: Deploy bundle
-        run: python -m databricks bundle deploy --target ${{ github.event.inputs.target }}
+        run: databricks bundle deploy --target ${{ github.event.inputs.target }}
