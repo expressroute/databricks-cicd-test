@@ -1,27 +1,26 @@
 variables:
-  project_name: "dba-cicd"
+  project_name:
+    default: "dba-cicd"
+
+  env:
+    default: "dev"
 
 bundle:
-  name: "${var.project_name}"
+  name: "dba-cicd"
 
 workspace:
+  # Default workspace path; overridden by targets.
   root_path: "/Shared/dev/${var.project_name}"
-
-resources:
-  notebooks:
-    main:
-      path: "notebooks/main_notebook"   # relative path in repo
-      target_path: "${workspace.root_path}/notebooks/main_notebook"
 
 targets:
   dev:
-    workspace:
-      root_path: "/Shared/dev/${var.project_name}"
     variables:
       env: "dev"
+    workspace:
+      root_path: "/Shared/dev/${var.project_name}"
 
   prd:
-    workspace:
-      root_path: "/Shared/prd/${var.project_name}"
     variables:
       env: "prd"
+    workspace:
+      root_path: "/Shared/prd/${var.project_name}"
