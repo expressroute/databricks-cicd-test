@@ -1,0 +1,27 @@
+variables:
+  project_name: "dba-cicd"
+
+bundle:
+  name: "${var.project_name}"
+
+workspace:
+  root_path: "/Shared/dev/${var.project_name}"
+
+resources:
+  notebooks:
+    main:
+      path: "notebooks/main_notebook"   # relative path in repo
+      target_path: "${workspace.root_path}/notebooks/main_notebook"
+
+targets:
+  dev:
+    workspace:
+      root_path: "/Shared/dev/${var.project_name}"
+    variables:
+      env: "dev"
+
+  prd:
+    workspace:
+      root_path: "/Shared/prd/${var.project_name}"
+    variables:
+      env: "prd"
