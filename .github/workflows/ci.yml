@@ -1,20 +1,30 @@
-name: CI
+name: CI - Validate Bundle
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - "**"
+  pull_request:
 
 jobs:
   validate:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Databricks CLI & SDK
-        run: |
-          pip install databricks-sdk
-          pip install databricks
+      - name: Setup Databricks CLI
+        uses: databricks/setup-cli@main
 
-      - name: Validate bundle syntax
-        run: databricks bundle validate
+      - name: Validate bundle (dev target)
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: databricks bundle validate --target dev
+
+      - name: Validate bundle (prd target)
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: databricks bundle validate --target prd

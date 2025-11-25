@@ -1,12 +1,12 @@
 variables:
   project_name:
-    default: "my_project"
+    default: "dba-cicd"
 
   env:
     default: "dev"
 
 bundle:
-  name: "my_project"
+  name: "dba-cicd"
 
 workspace:
   # Default workspace path; overridden by targets.
