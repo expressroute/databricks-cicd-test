@@ -38,4 +38,4 @@ jobs:
           echo "DATABRICKS_TOKEN=${{ secrets.DATABRICKS_TOKEN }}" >> $GITHUB_ENV
 
       - name: Deploy bundle
-        run: databricks bundle deploy --target ${{ github.event.inputs.target }}
+        run: python -m databricks bundle deploy --target ${{ github.event.inputs.target }}
