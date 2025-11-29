@@ -11,11 +11,13 @@ variables:
   schema:
     default: "stg"
 
+  sql_warehouse_id:
+    default: "da5b802f429182bb"
+
 bundle:
   name: "dba-cicd"
 
 workspace:
-  # Default workspace path (overridden by targets)
   root_path: "/Shared/dev/${var.project_name}"
 
 targets:
@@ -24,6 +26,7 @@ targets:
       env: "dev"
       catalog: "hen_db"
       schema: "stg"
+      sql_warehouse_id: "da5b802f429182bb"
     workspace:
       root_path: "/Shared/dev/${var.project_name}"
 
@@ -32,6 +35,7 @@ targets:
       env: "prd"
       catalog: "hen_db"
       schema: "prd"
+      sql_warehouse_id: "da5b802f429182bb"
     workspace:
       root_path: "/Shared/prd/${var.project_name}"
 
@@ -42,6 +46,5 @@ resources:
       tasks:
         - task_key: create_customers_table
           sql_task:
-            file: "sql/tables/customers.sql"
-          compute:
-            target: "serverless"
+            query: "sql/tables/customers.sql"
+            warehouse_id: "${var.sql_warehouse_id}"
