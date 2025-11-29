@@ -14,7 +14,7 @@ on:
 jobs:
 
   ############################################################
-  # JOB 1: Shared validation (Python, SQL, YAML)
+  # JOB 1: Shared validation (Python, SQL)
   ############################################################
   validate-shared:
     runs-on: ubuntu-latest
@@ -28,20 +28,26 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install linting tools
-        run: pip install sqlfluff
+      ############################################################
+      # SQLFluff with Spark dialect
+      ############################################################
+      - name: Install SQLFluff
+        run: pip install sqlfluff sqlfluff-dialect-spark
 
+      - name: Validate SQL files
+        run: |
+          echo "Checking SQL syntax..."
+          sqlfluff lint ./sql --dialect spark
+
+      ############################################################
+      # Python notebook syntax validation
+      ############################################################
       - name: Validate notebook syntax
         run: |
           echo "Checking Python notebooks for syntax errors..."
           find notebooks -name "*.py" -type f -print0 | \
             xargs -0 -I {} sh -c 'echo "Checking {}" && python -m py_compile "{}"' || \
             (echo "Notebook syntax validation failed." && exit 1)
-
-      - name: Validate SQL files
-        run: |
-          echo "Checking SQL syntax..."
-          sqlfluff lint ./sql --dialect spark
 
 
   ############################################################
@@ -54,8 +60,11 @@ jobs:
     if: github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/')
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: databricks/setup-cli@main
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Databricks CLI
+        uses: databricks/setup-cli@main
 
       - name: Validate bundle (dev)
         env:
@@ -74,8 +83,11 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: databricks/setup-cli@main
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Databricks CLI
+        uses: databricks/setup-cli@main
 
       - name: Validate bundle (prd)
         env:
