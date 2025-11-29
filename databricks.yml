@@ -49,3 +49,6 @@ resources:
             file:
               path: "sql/tables/customers.sql"
             warehouse_id: "${var.sql_warehouse_id}"
+            parameters:
+              catalog: "${var.catalog}"
+              schema: "${var.schema}"
