@@ -39,7 +39,7 @@ targets:
     variables:
       env: "prd"
       catalog: "hen_db"
-      schema: "prd"
+      schema: "stg"
       sql_warehouse_id: "da5b802f429182bb"
     workspace:
       root_path: "/Shared/prd/${var.project_name}"
