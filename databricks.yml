@@ -19,7 +19,7 @@ bundle:
   name: "dba-cicd"
 
 include:
-  - ./jobs/create_sql.yml
+  - jobs/create_sql.yml
 
 workspace:
   # Default workspace path (overridden by targets)
