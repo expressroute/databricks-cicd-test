@@ -25,7 +25,7 @@ jobs:
         run: |
           echo "Checking Python notebooks for syntax errors..."
           find notebooks -name "*.py" -type f -print0 | \
-            xargs -0 -I {} python -m py_compile {} || \
+            xargs -0 -I {} sh -c 'echo "Checking {}" && python -m py_compile "{}"' || \
             (echo "Notebook syntax validation failed." && exit 1)
 
       - name: Validate bundle (dev target)
