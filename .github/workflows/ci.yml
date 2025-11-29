@@ -32,7 +32,7 @@ jobs:
       # SQLFluff with Spark dialect
       ############################################################
       - name: Install SQLFluff
-        run: pip install sqlfluff sqlfluff-dialect-spark
+        run: pip install sqlfluff sqlfluff-sparksql
 
       - name: Validate SQL files
         run: |
