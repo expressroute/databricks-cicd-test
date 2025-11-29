@@ -46,5 +46,5 @@ resources:
       tasks:
         - task_key: create_customers_table
           sql_task:
-            file: "sql/tables/customers.sql"
+            query: "sql/tables/customers.sql"
             warehouse_id: "${var.sql_warehouse_id}"
