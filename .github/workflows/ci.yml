@@ -3,8 +3,12 @@ name: CI - Validate Bundle
 on:
   push:
     branches:
-      - "**"
+      - "develop"
+      - "feature/*"
   pull_request:
+    branches:
+      - "develop"
+      - "main"
 
 jobs:
   validate:
@@ -16,6 +20,13 @@ jobs:
 
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@main
+
+      - name: Validate notebook syntax
+        run: |
+          echo "Checking Python notebooks for syntax errors..."
+          find notebooks -name "*.py" -type f -print0 | \
+            xargs -0 -I {} python -m py_compile {} || \
+            (echo "Notebook syntax validation failed." && exit 1)
 
       - name: Validate bundle (dev target)
         env:

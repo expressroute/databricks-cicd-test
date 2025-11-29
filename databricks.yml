@@ -5,22 +5,43 @@ variables:
   env:
     default: "dev"
 
+  catalog:
+    default: "hen_db"
+
+  schema:
+    default: "stg"
+
 bundle:
   name: "dba-cicd"
 
 workspace:
-  # Default workspace path; overridden by targets.
+  # Default workspace path (overridden by targets)
   root_path: "/Shared/dev/${var.project_name}"
 
 targets:
   dev:
     variables:
       env: "dev"
+      catalog: "hen_db"
+      schema: "stg"
     workspace:
       root_path: "/Shared/dev/${var.project_name}"
 
   prd:
     variables:
       env: "prd"
+      catalog: "hen_db"
+      schema: "prd"
     workspace:
       root_path: "/Shared/prd/${var.project_name}"
+
+resources:
+  jobs:
+    apply_sql:
+      name: "create_sql_objects_${var.env}"
+      tasks:
+        - task_key: create_customers_table
+          sql_task:
+            file: "sql/tables/customers.sql"
+          compute:
+            target: "serverless"
