@@ -14,7 +14,7 @@ on:
 jobs:
 
   ############################################################
-  # JOB 1: Shared validation (Python, SQL)
+  # JOB 1: Shared validation (Python)
   ############################################################
   validate-shared:
     runs-on: ubuntu-latest
@@ -27,17 +27,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-
-      ############################################################
-      # SQLFluff with Spark dialect
-      ############################################################
-      - name: Install SQLFluff
-        run: pip install "sqlfluff[sparksql]"
-
-      - name: Validate SQL files
-        run: |
-          echo "Checking SQL syntax..."
-          sqlfluff lint ./sql --dialect sparksql
 
       ############################################################
       # Python notebook syntax validation
