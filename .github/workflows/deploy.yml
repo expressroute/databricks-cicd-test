@@ -33,19 +33,9 @@ jobs:
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@main
 
-      - name: Set Databricks credentials
-        run: |
-          if [ "${{ github.event.inputs.environment }}" = "dev" ]; then
-            echo "DATABRICKS_HOST=${{ secrets.DATABRICKS_HOST_DEV }}" >> $GITHUB_ENV
-            echo "DATABRICKS_TOKEN=${{ secrets.DATABRICKS_TOKEN_DEV }}" >> $GITHUB_ENV
-          else
-            echo "DATABRICKS_HOST=${{ secrets.DATABRICKS_HOST_PRD }}" >> $GITHUB_ENV
-            echo "DATABRICKS_TOKEN=${{ secrets.DATABRICKS_TOKEN_PRD }}" >> $GITHUB_ENV
-          fi
-
       - name: Deploy Databricks bundle
         env:
-          DATABRICKS_HOST: ${{ env.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ env.DATABRICKS_TOKEN }}
+          DATABRICKS_HOST: ${{ github.event.inputs.environment == 'dev' && secrets.DATABRICKS_HOST || secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ github.event.inputs.environment == 'dev' && secrets.DATABRICKS_TOKEN || secrets.DATABRICKS_TOKEN }}
         run: |
           databricks bundle deploy --target ${{ github.event.inputs.environment }}
