@@ -1,8 +1,11 @@
-workspace:
-  host: "${env.DATABRICKS_HOST_PRD}"
+targets:
+  prd:
+    workspace:
+      host: "${env.DATABRICKS_HOST_PRD}"
+      root_path: "/Shared/prd/${var.project_name}"
 
-variables:
-  env: "prd"
-  catalog: "hen_db"
-  schema: "stg"
-  sql_warehouse_id: "da5b802f429182bb"
+    variables:
+      env: "prd"
+      catalog: "hen_db"
+      schema: "stg"
+      sql_warehouse_id: "da5b802f429182bb"

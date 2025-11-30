@@ -1,8 +1,11 @@
-workspace:
-  host: "${env.DATABRICKS_HOST_DEV}"
+targets:
+  dev:
+    workspace:
+      host: "${env.DATABRICKS_HOST_DEV}"
+      root_path: "/Shared/dev/${var.project_name}"
 
-variables:
-  env: "dev"
-  catalog: "hen_db"
-  schema: "stg"
-  sql_warehouse_id: "da5b802f429182bb"
+    variables:
+      env: "dev"
+      catalog: "hen_db"
+      schema: "stg"
+      sql_warehouse_id: "da5b802f429182bb"

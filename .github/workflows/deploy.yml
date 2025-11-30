@@ -43,9 +43,9 @@ jobs:
             echo "DATABRICKS_TOKEN=${{ secrets.DATABRICKS_TOKEN_PRD }}" >> $GITHUB_ENV
           fi
 
-      - name: Deploy bundle
+      - name: Deploy Databricks bundle
         env:
           DATABRICKS_HOST: ${{ env.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ env.DATABRICKS_TOKEN }}
         run: |
-          databricks bundle deploy -e ${{ github.event.inputs.environment }}
+          databricks bundle deploy --target ${{ github.event.inputs.environment }}

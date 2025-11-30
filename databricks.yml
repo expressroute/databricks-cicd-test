@@ -1,29 +1,21 @@
 bundle:
-  type: "databricks"
   name: "${var.project_name}"
 
 variables:
   project_name:
     default: "dba-cicd"
-
-  # Must be overridden by config/<env>.yml
   env:
     description: "Deployment environment name"
-
   catalog:
     description: "Catalog to use"
-
   schema:
     description: "Schema to use"
-
-  # SQL Warehouse ID used to run SQL tasks
   sql_warehouse_id:
     description: "SQL warehouse id"
 
 include:
   - jobs/create_sql.yml
+  - config/*.yml
 
 workspace:
-  # Environment-specific value defined in config/<env>.yml
   host: "${env.DATABRICKS_HOST}"
-  root_path: "/Shared/${var.env}/${var.project_name}"
