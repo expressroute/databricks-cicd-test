@@ -1,7 +1,6 @@
 targets:
   prd:
     workspace:
-      host: "${env.DATABRICKS_HOST}"
       root_path: "/Shared/prd/${var.project_name}"
 
     variables:

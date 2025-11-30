@@ -18,4 +18,4 @@ include:
   - config/*.yml
 
 workspace:
-  host: "${env.DATABRICKS_HOST}"
+  root_path: "/Shared/${var.env}/${var.project_name}"

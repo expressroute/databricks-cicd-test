@@ -1,7 +1,6 @@
 targets:
   dev:
     workspace:
-      host: "${env.DATABRICKS_HOST}"
       root_path: "/Shared/dev/${var.project_name}"
 
     variables:
