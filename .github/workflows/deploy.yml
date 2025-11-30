@@ -1,17 +1,11 @@
-name: Deploy Bundle
+name: Deploy Databricks Bundle
 
 on:
   workflow_dispatch:
     inputs:
-      branch:
-        description: "Branch to deploy from"
+      environment:
+        description: "Environment to deploy (dev or prd)"
         required: true
-        default: "develop"
-        type: string
-      target:
-        description: "Bundle target (dev or prd)"
-        required: true
-        default: "dev"
         type: choice
         options:
           - dev
@@ -22,20 +16,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout selected branch
+      - name: Select branch based on environment
+        id: set_branch
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "dev" ]; then
+            echo "BRANCH=develop" >> $GITHUB_ENV
+          else
+            echo "BRANCH=main" >> $GITHUB_ENV
+          fi
+
+      - name: Checkout correct branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch }}
+          ref: ${{ env.BRANCH }}
 
-      # Official Databricks action: installs the correct CLI on PATH
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@main
 
-      - name: Show CLI version (debug)
-        run: databricks -v
+      - name: Set Databricks credentials
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "dev" ]; then
+            echo "DATABRICKS_HOST=${{ secrets.DATABRICKS_HOST_DEV }}" >> $GITHUB_ENV
+            echo "DATABRICKS_TOKEN=${{ secrets.DATABRICKS_TOKEN_DEV }}" >> $GITHUB_ENV
+          else
+            echo "DATABRICKS_HOST=${{ secrets.DATABRICKS_HOST_PRD }}" >> $GITHUB_ENV
+            echo "DATABRICKS_TOKEN=${{ secrets.DATABRICKS_TOKEN_PRD }}" >> $GITHUB_ENV
+          fi
 
-      - name: Deploy bundle
-        run: databricks bundle deploy --target ${{ github.event.inputs.target }}
+      - name: Deploy Databricks bundle
         env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_HOST: ${{ env.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ env.DATABRICKS_TOKEN }}
+        run: |
+          databricks bundle deploy --target ${{ github.event.inputs.environment }}
