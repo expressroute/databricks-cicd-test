@@ -1,45 +1,21 @@
+bundle:
+  name: "${var.project_name}"
+
 variables:
   project_name:
     default: "dba-cicd"
-
   env:
-    default: "dev"
-
+    description: "Deployment environment name"
   catalog:
-    default: "hen_db"
-
+    description: "Catalog to use"
   schema:
-    default: "stg"
-
-  # SQL Warehouse ID used to run SQL tasks
+    description: "Schema to use"
   sql_warehouse_id:
-    default: "da5b802f429182bb"
-
-bundle:
-  name: "dba-cicd"
+    description: "SQL warehouse id"
 
 include:
   - jobs/create_sql.yml
+  - config/*.yml
 
 workspace:
-  # Default workspace path (overridden by targets)
-  root_path: "/Shared/dev/${var.project_name}"
-
-targets:
-  dev:
-    variables:
-      env: "dev"
-      catalog: "hen_db"
-      schema: "stg"
-      sql_warehouse_id: "da5b802f429182bb"
-    workspace:
-      root_path: "/Shared/dev/${var.project_name}"
-
-  prd:
-    variables:
-      env: "prd"
-      catalog: "hen_db"
-      schema: "stg"
-      sql_warehouse_id: "da5b802f429182bb"
-    workspace:
-      root_path: "/Shared/prd/${var.project_name}"
+  root_path: "/Shared/${var.env}/${var.project_name}"
