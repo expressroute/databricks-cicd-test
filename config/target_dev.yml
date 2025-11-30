@@ -1,0 +1,8 @@
+workspace:
+  host: "${env.DATABRICKS_HOST_DEV}"
+
+variables:
+  env: "dev"
+  catalog: "hen_db"
+  schema: "stg"
+  sql_warehouse_id: "da5b802f429182bb"
