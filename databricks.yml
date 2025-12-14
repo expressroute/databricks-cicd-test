@@ -1,38 +1,35 @@
-bundle:
-  name: "${var.project_name}"
-
 variables:
   project_name:
-    default: "dba-cicd"
-  env:
-    description: "Deployment environment name"
-  catalog:
-    default: "hen_db"
+    default: dba-cicd
 
-  # SQL Warehouse ID used to run SQL tasks
-  sql_warehouse_id:
-    description: "SQL warehouse id"
+  env:
+    default: dev
+
+  catalog:
+    default: hen_db
+
+bundle:
+  name: ${var.project_name}
 
 include:
   - jobs/ingest_hevy_workout.yml
 
 workspace:
-  # Default workspace path (overridden by targets)
-  root_path: "/Shared/dev/${var.project_name}"
+  root_path: /Shared/${var.env}/${var.project_name}
 
 targets:
   dev:
     mode: production
     variables:
-      env: "dev"
-      catalog: "hen_db"
+      env: dev
+      catalog: hen_db
     workspace:
-      root_path: "/Shared/dev/${var.project_name}"
+      root_path: /Shared/dev/${var.project_name}
 
   prd:
     mode: production
     variables:
-      env: "prd"
-      catalog: "hen_db"
+      env: prd
+      catalog: hen_db
     workspace:
-      root_path: "/Shared/prd/${var.project_name}"
+      root_path: /Shared/prd/${var.project_name}
