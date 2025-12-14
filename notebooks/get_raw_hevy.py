@@ -17,7 +17,7 @@ import json
 
 # COMMAND ----------
 
-HEVY_API_TOKEN = "65ffec40-6b50-4e63-9f8c-6f06477b343b" #dbutils.widgets.get("HEVY_API_KEY")
+HEVY_API_TOKEN = dbutils.widgets.get("HEVY_API_KEY")
 if not HEVY_API_TOKEN:
     raise RuntimeError("HEVY_API_KEY not provided")
 
