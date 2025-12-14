@@ -1,15 +1,12 @@
 variables:
   project_name:
-    default: dba-cicd
+    default: dbrks-hevy-project
 
   env:
-    default: dev
-
-  catalog:
-    default: hen_db
+    description: "Deployment environment (dev or prd)"
 
   hevy_api_key:
-    description: "hevy API key inj by github"
+    description: "Hevy api key injected by github"
 
 bundle:
   name: ${var.project_name}
@@ -22,17 +19,14 @@ workspace:
 
 targets:
   dev:
+    default: true
     mode: production
     variables:
       env: dev
       catalog: hen_db
-    workspace:
-      root_path: /Shared/dev/${var.project_name}
 
   prd:
     mode: production
     variables:
       env: prd
       catalog: hen_db
-    workspace:
-      root_path: /Shared/prd/${var.project_name}

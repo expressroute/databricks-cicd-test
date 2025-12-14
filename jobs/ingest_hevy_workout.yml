@@ -1,7 +1,7 @@
 resources:
   jobs:
     ingest_hevy_workout:
-      name: ingest_hevy_workout_${var.env}"
+      name: ingest_hevy_workout_${var.env}
       schedule:
         quartz_cron_expression: 29 0 10 * * ?
         timezone_id: Europe/Brussels

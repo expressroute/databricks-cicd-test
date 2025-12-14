@@ -1,8 +1,0 @@
-targets:
-  prd:
-    workspace:
-      root_path: "/Shared/prd/${var.project_name}"
-
-    variables:
-      env: "prd"
-      catalog: "hen_db"

@@ -1,8 +1,0 @@
-targets:
-  dev:
-    workspace:
-      root_path: "/Shared/dev/${var.project_name}"
-
-    variables:
-      env: "dev"
-      catalog: "hen_db"
