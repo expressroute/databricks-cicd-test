@@ -17,7 +17,7 @@ import json
 
 # COMMAND ----------
 
-HEVY_API_TOKEN = dbutils.widgets.get("HEVY_API_KEY")
+HEVY_API_TOKEN = "65ffec40-6b50-4e63-9f8c-6f06477b343b" #dbutils.widgets.get("HEVY_API_KEY")
 if not HEVY_API_TOKEN:
     raise RuntimeError("HEVY_API_KEY not provided")
 
@@ -76,13 +76,13 @@ row_count = 0
 
 try:
     wm = get_watermark("raw", "hevy_workout_events")
-    print(f"[RAW] Starting ingestion. Watermark: {wm}")
+    print(f"Starting ingestion. Watermark: {wm}")
 
     events = get_all_workout_events(since=wm)
-    print(f"[RAW] Retrieved {len(events)} events")
+    print(f"Retrieved {len(events)} events")
 
     if not events:
-        print("[RAW] No new events")
+        print("No new events")
 
         log_run(
             table_name="hevy_workout_events",
@@ -95,8 +95,6 @@ try:
         df_raw = build_raw_df(events)
         row_count = df_raw.count()
 
-        print(f"[RAW] Writing {row_count} rows to target table")
-
         (
             df_raw.write.format("delta")
             .mode("append")
@@ -104,21 +102,20 @@ try:
         )
         print(f"Writing {row_count} rows to target table")
 
-        # simpler watermark logic: use max of workout.updated_at and workout.deleted_at across all events
-        max_ts = None
-        for e in events:
-            workout = e.get("workout", {})
-            ts_list = [workout.get("updated_at"), workout.get("deleted_at")]
-            ts_list = [ts for ts in ts_list if ts]
-            if ts_list:
-                ts = max(ts_list)
-                if not max_ts or ts > max_ts:
-                    max_ts = ts
+        # Find the highest timestamp among workout.updated_at and top-level deleted_at in all events
+        max_ts = max(
+            [   
+                ts
+                for e in events
+                for ts in [e.get("workout", {}).get("updated_at"), e.get("deleted_at")]
+                if ts
+            ],
+            default=None,
+        )   
 
         update_watermark(
             schema_name="raw", table_name="hevy_workout_events", watermark_ts=max_ts
         )
-        print(f"Watermark updated to: {max_ts}")
 
         log_run(
             table_name="hevy_workout_events",
