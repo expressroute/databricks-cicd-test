@@ -37,5 +37,6 @@ jobs:
         env:
           DATABRICKS_HOST: ${{ github.event.inputs.environment == 'dev' && secrets.DATABRICKS_HOST || secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ github.event.inputs.environment == 'dev' && secrets.DATABRICKS_TOKEN || secrets.DATABRICKS_TOKEN }}
+          BUNDLE_VAR_hevy_api_key: ${{ github.event.inputs.environment == 'dev' && secrets.HEVY_API_KEY || secrets.HEVY_API_KEY }}
         run: |
           databricks bundle deploy --target ${{ github.event.inputs.environment }}
