@@ -23,8 +23,12 @@ targets:
     mode: production
     variables:
       env: dev
+    workspace:
+      root_path: /Shared/dev/${var.project_name}
 
   prd:
     mode: production
     variables:
       env: prd
+    workspace:
+      root_path: /Shared/prd/${var.project_name}
