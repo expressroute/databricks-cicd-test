@@ -1,19 +1,17 @@
+bundle:
+  name: "${var.project_name}"
+
 variables:
   project_name:
     default: "dba-cicd"
-
   env:
-    default: "dev"
-
+    description: "Deployment environment name"
   catalog:
     default: "hen_db"
 
   # SQL Warehouse ID used to run SQL tasks
   sql_warehouse_id:
-    default: "da5b802f429182bb"
-
-bundle:
-  name: "dba-cicd"
+    description: "SQL warehouse id"
 
 include:
   - jobs/ingest_hevy_workout.yml
