@@ -102,29 +102,23 @@ try:
             .mode("append")
             .saveAsTable("hen_db.raw.hevy_workout_events")
         )
+        print(f"Writing {row_count} rows to target table")
 
-        # derive watermark from source data
-        def get_event_ts(e):
-            workout = e.get("workout")
-            if not workout:
-                return None
-            updated_at = workout.get("updated_at")
-            deleted_at = workout.get("deleted_at")
-            if updated_at and deleted_at:
-                return max(updated_at, deleted_at)
-            return updated_at or deleted_at
+        # simpler watermark logic: use max of workout.updated_at and workout.deleted_at across all events
+        max_ts = None
+        for e in events:
+            workout = e.get("workout", {})
+            ts_list = [workout.get("updated_at"), workout.get("deleted_at")]
+            ts_list = [ts for ts in ts_list if ts]
+            if ts_list:
+                ts = max(ts_list)
+                if not max_ts or ts > max_ts:
+                    max_ts = ts
 
-        max_ts = max(
-            (get_event_ts(e) for e in events if get_event_ts(e)),
-            default=None
+        update_watermark(
+            schema_name="raw", table_name="hevy_workout_events", watermark_ts=max_ts
         )
-
-        if max_ts:
-            update_watermark(
-                schema_name="raw", table_name="hevy_workout_events", watermark_ts=max_ts
-            )
-
-        print("[RAW] Write + watermark update completed")
+        print(f"Watermark updated to: {max_ts}")
 
         log_run(
             table_name="hevy_workout_events",
@@ -133,10 +127,10 @@ try:
             run_status="SUCCESS",
         )
 
-    print("[RAW] Ingestion completed successfully")
+    print("Ingestion completed successfully")
 
 except Exception as e:
-    print(f"[RAW] Ingestion FAILED: {e}")
+    print(f"Ingestion failed: {e}")
 
     log_run(
         table_name="hevy_workout_events",
