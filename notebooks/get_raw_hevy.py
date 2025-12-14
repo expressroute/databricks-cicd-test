@@ -104,15 +104,25 @@ try:
         )
 
         # derive watermark from source data
+        def get_event_ts(e):
+            workout = e.get("workout")
+            if not workout:
+                return None
+            updated_at = workout.get("updated_at")
+            deleted_at = workout.get("deleted_at")
+            if updated_at and deleted_at:
+                return max(updated_at, deleted_at)
+            return updated_at or deleted_at
+
         max_ts = max(
-            e["workout"]["updated_at"]
-            for e in events
-            if e.get("workout") and e["workout"].get("updated_at")
+            (get_event_ts(e) for e in events if get_event_ts(e)),
+            default=None
         )
 
-        update_watermark(
-            schema_name="raw", table_name="hevy_workout_events", watermark_ts=max_ts
-        )
+        if max_ts:
+            update_watermark(
+                schema_name="raw", table_name="hevy_workout_events", watermark_ts=max_ts
+            )
 
         print("[RAW] Write + watermark update completed")
 
