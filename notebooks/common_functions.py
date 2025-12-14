@@ -31,7 +31,7 @@ def update_watermark(schema_name: str, table_name: str, watermark_ts):
 
     new_watermark_ts = (dt + timedelta(seconds=1)).strftime("%Y-%m-%d %H:%M:%S")
 
-    print(f"[WATERMARK] Updating watermark to {new_watermark_ts}")
+    print(f"Updating watermark to {new_watermark_ts}")
 
     spark.sql(
         f"""
