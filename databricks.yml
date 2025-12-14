@@ -8,9 +8,6 @@ variables:
   catalog:
     default: "hen_db"
 
-  schema:
-    default: "stg"
-
   # SQL Warehouse ID used to run SQL tasks
   sql_warehouse_id:
     default: "da5b802f429182bb"
@@ -19,7 +16,7 @@ bundle:
   name: "dba-cicd"
 
 include:
-  - jobs/create_sql.yml
+  - jobs/ingest_hevy_workout.yml
 
 workspace:
   # Default workspace path (overridden by targets)
@@ -27,19 +24,17 @@ workspace:
 
 targets:
   dev:
+    mode: production
     variables:
       env: "dev"
       catalog: "hen_db"
-      schema: "stg"
-      sql_warehouse_id: "da5b802f429182bb"
     workspace:
       root_path: "/Shared/dev/${var.project_name}"
 
   prd:
+    mode: production
     variables:
       env: "prd"
       catalog: "hen_db"
-      schema: "prd"
-      sql_warehouse_id: "da5b802f429182bb"
     workspace:
       root_path: "/Shared/prd/${var.project_name}"
