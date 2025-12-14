@@ -1,4 +1,8 @@
 # Databricks notebook source
+dbutils.widgets.text("HEVY_API_KEY", "")
+
+# COMMAND ----------
+
 # MAGIC %run ./common_functions
 
 # COMMAND ----------
@@ -13,7 +17,10 @@ import json
 
 # COMMAND ----------
 
-HEVY_API_TOKEN = '65ffec40-6b50-4e63-9f8c-6f06477b343b'
+HEVY_API_TOKEN = dbutils.widgets.get("HEVY_API_KEY")
+if not HEVY_API_TOKEN:
+    raise RuntimeError("HEVY_API_KEY not provided")
+
 BASE_URL = "https://api.hevyapp.com/v1"
 HEADERS = {"api-key": HEVY_API_TOKEN, "Accept": "application/json"}
 

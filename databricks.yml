@@ -8,6 +8,9 @@ variables:
   catalog:
     default: hen_db
 
+  hevy_api_key:
+    description: "hevy API key inj by github"
+
 bundle:
   name: ${var.project_name}
 
