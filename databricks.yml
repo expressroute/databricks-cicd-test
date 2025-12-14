@@ -23,10 +23,8 @@ targets:
     mode: production
     variables:
       env: dev
-      catalog: hen_db
 
   prd:
     mode: production
     variables:
       env: prd
-      catalog: hen_db
