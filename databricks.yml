@@ -1,21 +1,35 @@
-bundle:
-  name: "${var.project_name}"
-
 variables:
   project_name:
-    default: "dba-cicd"
+    default: dba-cicd
+
   env:
-    description: "Deployment environment name"
+    default: dev
+
   catalog:
-    description: "Catalog to use"
-  schema:
-    description: "Schema to use"
-  sql_warehouse_id:
-    description: "SQL warehouse id"
+    default: hen_db
+
+bundle:
+  name: ${var.project_name}
 
 include:
-  - jobs/create_sql.yml
-  - config/*.yml
+  - jobs/ingest_hevy_workout.yml
 
 workspace:
-  root_path: "/Shared/${var.env}/${var.project_name}"
+  root_path: /Shared/${var.env}/${var.project_name}
+
+targets:
+  dev:
+    mode: production
+    variables:
+      env: dev
+      catalog: hen_db
+    workspace:
+      root_path: /Shared/dev/${var.project_name}
+
+  prd:
+    mode: production
+    variables:
+      env: prd
+      catalog: hen_db
+    workspace:
+      root_path: /Shared/prd/${var.project_name}
