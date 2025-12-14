@@ -3,9 +3,9 @@ resources:
     ingest_hevy_workout:
       name: ingest_hevy_workout_${var.env}
       schedule:
-        quartz_cron_expression: 29 0 10 * * ?
+        quartz_cron_expression: 29 0 9 * * ?
         timezone_id: Europe/Brussels
-        pause_status: PAUSED
+        pause_status: UNPAUSED
       tasks:
         - task_key: hevy_raw_workout_events
           notebook_task:
