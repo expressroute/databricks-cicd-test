@@ -29,7 +29,7 @@ clean_df = (
         col("exercise_title"),
         col("distance_meters"),
         col("duration_seconds"),
-        when((col("exercise_index") == 0) & (col("exercise_title") == "Running"), True).otherwise(False).alias("is_running")
+        when((col("exercise_index") == 0) & (col("exercise_title") == "Running"), True).otherwise(False).alias("is_running"),
         when((col("exercise_index") == 0) & (col("exercise_title") == "Running"), True).otherwise(False).alias("is_running")
     )
 )
