@@ -1,16 +1,19 @@
-name: CI - Validate Bundle
+name: CI - Bundle Validation
 
 on:
   push:
     branches:
-      - "feature/*"
-      - "develop"
-      - "main"
+      - feature/*
+  pull_request:
+    branches:
+      - develop
+      - main
 
 jobs:
   validate:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
-    # One single job → one check in GitHub UI
+    
     steps:
 
       ############################################################

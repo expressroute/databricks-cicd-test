@@ -5,7 +5,7 @@ resources:
       schedule:
         quartz_cron_expression: 29 0 9 * * ?
         timezone_id: Europe/Brussels
-        pause_status: UNPAUSED
+        pause_status: ${var.job_pause_status}
       tasks:
         - task_key: hevy_raw_workout_events
           notebook_task:
