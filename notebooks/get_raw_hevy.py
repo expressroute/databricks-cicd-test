@@ -74,7 +74,7 @@ def build_raw_df(events: list[dict]):
 
 # COMMAND ----------
 
-run_id = log_run(table_name=f"({target_table})")
+run_id = log_run(table_name=target_table)
 row_count = 0
 
 try:
@@ -101,7 +101,7 @@ try:
         (
             df_raw.write.format("delta")
             .mode("append")
-            .saveAsTable("hen_db.raw.f" "{target_table}")
+            .saveAsTable(f"hen_db.raw.{target_table}")
         )
         print(f"Writing {row_count} rows to target table")
 
