@@ -20,9 +20,12 @@ import json
 HEVY_API_TOKEN = dbutils.widgets.get("HEVY_API_KEY")
 if not HEVY_API_TOKEN:
     raise RuntimeError("HEVY_API_KEY not provided")
-
 BASE_URL = "https://api.hevyapp.com/v1"
 HEADERS = {"api-key": HEVY_API_TOKEN, "Accept": "application/json"}
+
+# COMMAND ----------
+
+target_table = "hevy_workout_events"
 
 # COMMAND ----------
 
@@ -71,11 +74,11 @@ def build_raw_df(events: list[dict]):
 
 # COMMAND ----------
 
-run_id = log_run(table_name="hevy_workout_events")
+run_id = log_run(table_name=f"({target_table})")
 row_count = 0
 
 try:
-    wm = get_watermark("raw", "hevy_workout_events")
+    wm = get_watermark("raw", target_table)
     print(f"Starting ingestion. Watermark: {wm}")
 
     events = get_all_workout_events(since=wm)
@@ -85,7 +88,7 @@ try:
         print("No new events")
 
         log_run(
-            table_name="hevy_workout_events",
+            table_name=target_table,
             run_id=run_id,
             row_count=0,
             run_status="SUCCESS",
@@ -98,27 +101,27 @@ try:
         (
             df_raw.write.format("delta")
             .mode("append")
-            .saveAsTable("hen_db.raw.hevy_workout_events")
+            .saveAsTable("hen_db.raw.f" "{target_table}")
         )
         print(f"Writing {row_count} rows to target table")
 
         # Find the highest timestamp among workout.updated_at and top-level deleted_at in all events
         max_ts = max(
-            [   
+            [
                 ts
                 for e in events
                 for ts in [e.get("workout", {}).get("updated_at"), e.get("deleted_at")]
                 if ts
             ],
             default=None,
-        )   
+        )
 
         update_watermark(
-            schema_name="raw", table_name="hevy_workout_events", watermark_ts=max_ts
+            schema_name="raw", table_name=target_table, watermark_ts=max_ts
         )
 
         log_run(
-            table_name="hevy_workout_events",
+            table_name=target_table,
             run_id=run_id,
             row_count=row_count,
             run_status="SUCCESS",
@@ -130,7 +133,7 @@ except Exception as e:
     print(f"Ingestion failed: {e}")
 
     log_run(
-        table_name="hevy_workout_events",
+        table_name=target_table,
         run_id=run_id,
         row_count=row_count,
         run_status="FAILED",

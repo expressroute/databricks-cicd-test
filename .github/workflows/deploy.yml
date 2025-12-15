@@ -11,13 +11,19 @@ on:
           - dev
           - prd
 
+concurrency:
+  group: deploy-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Select branch based on environment
-        id: set_branch
         run: |
           if [ "${{ github.event.inputs.environment }}" = "dev" ]; then
             echo "BRANCH=develop" >> $GITHUB_ENV
@@ -33,10 +39,16 @@ jobs:
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@main
 
+      - name: Validate Databricks bundle
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          BUNDLE_VAR_hevy_api_key: ${{ secrets.HEVY_API_KEY }}
+        run: databricks bundle validate --target ${{ github.event.inputs.environment }}
+
       - name: Deploy Databricks bundle
         env:
-          DATABRICKS_HOST: ${{ github.event.inputs.environment == 'dev' && secrets.DATABRICKS_HOST || secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ github.event.inputs.environment == 'dev' && secrets.DATABRICKS_TOKEN || secrets.DATABRICKS_TOKEN }}
-          BUNDLE_VAR_hevy_api_key: ${{ github.event.inputs.environment == 'dev' && secrets.HEVY_API_KEY || secrets.HEVY_API_KEY }}
-        run: |
-          databricks bundle deploy --target ${{ github.event.inputs.environment }}
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          BUNDLE_VAR_hevy_api_key: ${{ secrets.HEVY_API_KEY }}
+        run: databricks bundle deploy --target ${{ github.event.inputs.environment }}

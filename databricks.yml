@@ -8,6 +8,9 @@ variables:
   hevy_api_key:
     description: "Hevy api key injected by github"
 
+  job_pause_status:
+    description: "Job pause status (PAUSED or UNPAUSED)"
+
 bundle:
   name: ${var.project_name}
 
@@ -23,6 +26,7 @@ targets:
     mode: production
     variables:
       env: dev
+      job_pause_status: PAUSED
     workspace:
       root_path: /Shared/dev/${var.project_name}
 
@@ -30,5 +34,6 @@ targets:
     mode: production
     variables:
       env: prd
+      job_pause_status: UNPAUSED
     workspace:
       root_path: /Shared/prd/${var.project_name}
