@@ -1,3 +1,6 @@
+bundle:
+  name: dbrks-hevy-project
+  
 variables:
   project_name:
     default: dbrks-hevy-project
@@ -10,9 +13,6 @@ variables:
 
   job_pause_status:
     description: "Job pause status (PAUSED or UNPAUSED)"
-
-bundle:
-  name: ${var.project_name}
 
 include:
   - jobs/ingest_hevy_workout.yml
