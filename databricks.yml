@@ -1,21 +1,39 @@
 bundle:
-  name: "${var.project_name}"
-
+  name: dbrks-hevy-project
+  
 variables:
   project_name:
-    default: "dba-cicd"
+    default: dbrks-hevy-project
+
   env:
-    description: "Deployment environment name"
-  catalog:
-    description: "Catalog to use"
-  schema:
-    description: "Schema to use"
-  sql_warehouse_id:
-    description: "SQL warehouse id"
+    description: "Deployment environment (dev or prd)"
+
+  hevy_api_key:
+    description: "Hevy api key injected by github"
+
+  job_pause_status:
+    description: "Job pause status (PAUSED or UNPAUSED)"
 
 include:
-  - jobs/create_sql.yml
-  - config/*.yml
+  - jobs/ingest_hevy_workout.yml
 
 workspace:
-  root_path: "/Shared/${var.env}/${var.project_name}"
+  root_path: /Shared/${var.env}/${var.project_name}
+
+targets:
+  dev:
+    default: true
+    mode: production
+    variables:
+      env: dev
+      job_pause_status: PAUSED
+    workspace:
+      root_path: /Shared/dev/${var.project_name}
+
+  prd:
+    mode: production
+    variables:
+      env: prd
+      job_pause_status: UNPAUSED
+    workspace:
+      root_path: /Shared/prd/${var.project_name}

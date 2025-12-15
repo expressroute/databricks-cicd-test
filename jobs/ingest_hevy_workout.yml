@@ -1,0 +1,29 @@
+resources:
+  jobs:
+    ingest_hevy_workout:
+      name: ingest_hevy_workout_${var.env}
+      schedule:
+        quartz_cron_expression: 29 0 9 * * ?
+        timezone_id: Europe/Brussels
+        pause_status: ${var.job_pause_status}
+      tasks:
+        - task_key: hevy_raw_workout_events
+          notebook_task:
+            notebook_path: "../notebooks/get_raw_hevy.py"
+            source: WORKSPACE
+            base_parameters:
+              HEVY_API_KEY: ${var.hevy_api_key}
+        - task_key: hevy_stg_workout
+          depends_on:
+            - task_key: hevy_raw_workout_events
+          run_if: NONE_FAILED
+          notebook_task:
+            notebook_path: "../notebooks/get_stg_hevy.py"
+            source: WORKSPACE
+      queue:
+        enabled: true
+      environments:
+        - environment_key: hevy_raw_workout_events_environment
+          spec:
+            environment_version: "4"
+      performance_target: PERFORMANCE_OPTIMIZED

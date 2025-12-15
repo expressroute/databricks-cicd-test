@@ -1,16 +1,19 @@
-name: CI - Validate Bundle
+name: CI - Bundle Validation
 
 on:
   push:
     branches:
-      - "feature/*"
-      - "develop"
-      - "main"
+      - feature/*
+  pull_request:
+    branches:
+      - develop
+      - main
 
 jobs:
   validate:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
-    # One single job → one check in GitHub UI
+    
     steps:
 
       ############################################################
@@ -45,6 +48,7 @@ jobs:
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          BUNDLE_VAR_hevy_api_key: ${{ secrets.HEVY_API_KEY }}
         run: databricks bundle validate --target dev
 
       - name: Validate Databricks bundle (prd)
@@ -52,4 +56,5 @@ jobs:
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          BUNDLE_VAR_hevy_api_key: ${{ secrets.HEVY_API_KEY }}
         run: databricks bundle validate --target prd
