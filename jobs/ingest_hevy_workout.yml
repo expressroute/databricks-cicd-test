@@ -20,6 +20,13 @@ resources:
           notebook_task:
             notebook_path: "../notebooks/get_stg_hevy.py"
             source: WORKSPACE
+        - task_key: hevy_load_silver
+          depends_on:
+            - task_key: hevy_stg_workout
+          run_if: NONE_FAILED
+          notebook_task:
+            notebook_path: "../notebooks/load_silver_hevy.py"
+            source: WORKSPACE
       queue:
         enabled: true
       environments:
