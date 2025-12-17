@@ -16,7 +16,9 @@ w = Window.partitionBy("workout_id")
 
 df_flagged = df_stg.withColumn(
     "has_delete_event",
-    F.max(F.when(F.col("event_type") == "deleted", 1).otherwise(0)).over(w)
+    F.max(
+        (F.col("event_type") == "deleted").cast("int")
+    ).over(w)
 )
 
 print(f"Rows with delete event present: {df_flagged.filter(F.col('has_delete_event') == 1).count()}")
@@ -90,11 +92,3 @@ except Exception as e:
         error_message=str(e),
     )
     raise
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC
-# MAGIC select *
-# MAGIC from hen_db.stg.meta_log
-# MAGIC order by end_time desc
