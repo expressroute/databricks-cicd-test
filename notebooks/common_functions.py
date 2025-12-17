@@ -44,18 +44,19 @@ def update_watermark(schema_name: str, table_name: str, watermark_ts):
 
 # COMMAND ----------
 
-meta_log_schema = StructType(
-    [
-        StructField("run_id", StringType(), False),
-        StructField("table_name", StringType(), False),
-        StructField("run_status", StringType(), False),
-        StructField("row_count", IntegerType(), True),
-        StructField("start_time", TimestampType(), True),
-        StructField("end_time", TimestampType(), True),
-        StructField("error_message", StringType(), True),
-    ]
-)
+from pyspark.sql import functions as F
+from pyspark.sql.types import *
+import uuid
 
+META_LOG_TABLE = "hen_db.stg.meta_log"
+VALID_STATUSES = {"RUNNING", "SUCCESS", "FAILED"}
+
+def _normalize_error(error_message: str | None) -> str | None:
+    if not error_message:
+        return None
+    msg = str(error_message).split("\n\n", 1)[0]
+    msg = " ".join(msg.splitlines())
+    return msg[:500]
 
 def log_run(
     table_name: str,
@@ -72,35 +73,40 @@ def log_run(
         df = spark.createDataFrame(
             [(run_id, table_name, "RUNNING", None, None, None, None)],
             schema=meta_log_schema,
-        ).withColumn("start_time", current_timestamp())
+        ).withColumn("start_time", F.current_timestamp())
 
-        (df.write.format("delta").mode("append").saveAsTable("hen_db.stg.meta_log"))
-
+        df.write.format("delta").mode("append").saveAsTable(META_LOG_TABLE)
         return run_id
 
     # END
-    else:
-        # normalize error message inline
-        clean_error = None
-        if error_message:
-            msg = str(error_message)
-            msg = msg.split("\n\n", 1)[0]  # keep first paragraph
-            msg = " ".join(msg.splitlines())  # force single line
-            clean_error = msg[:500]  # hard limit
+    if run_status not in VALID_STATUSES:
+        raise ValueError(f"Invalid run_status: {run_status}")
 
-            # escape quotes for SQL
-            clean_error = clean_error.replace("'", "''")
+    clean_error = _normalize_error(error_message)
 
-        spark.sql(
-            f"""
-            UPDATE hen_db.stg.meta_log
-            SET
-                row_count = {row_count},
-                run_status = '{run_status}',
-                end_time = current_timestamp(),
-                error_message = {f"'{clean_error}'" if clean_error else "NULL"}
-            WHERE run_id = '{run_id}'
-        """
+    updates = (
+        spark.createDataFrame(
+            [(run_id, row_count, run_status, clean_error)],
+            ["run_id", "row_count", "run_status", "error_message"],
         )
+        .withColumn("end_time", F.current_timestamp())
+    )
 
-        return None
+    (
+        spark.table(META_LOG_TABLE)
+        .alias("t")
+        .merge(
+            updates.alias("s"),
+            "t.run_id = s.run_id"
+        )
+        .whenMatchedUpdate(set={
+            "row_count": "s.row_count",
+            "run_status": "s.run_status",
+            "end_time": "s.end_time",
+            "error_message": "s.error_message",
+        })
+        .execute()
+    )
+
+    return None
+

@@ -1,112 +1,100 @@
 # Databricks notebook source
-from pyspark.sql.functions import col
-
-stg_df = spark.table("hen_db.stg.hevy_workout")
-print(f"stg table count: {stg_df.count()}")
-
-deleted_workout_ids = stg_df.filter(col("deleted_at").isNotNull()).select("workout_id")
-print(f"deleted workouts count: {deleted_workout_ids.count()}")
-
-result_df = stg_df.join(
-    deleted_workout_ids,
-    on="workout_id",
-    how="left_anti"
-)
-print(f"Cleaned: {result_df.count()}")
+# MAGIC %run ./common_functions
 
 # COMMAND ----------
 
-from pyspark.sql.functions import max
-
-latest_workouts = (
-    result_df
-    .groupBy("workout_id")
-    .agg(max("updated_at").alias("latest_updated_at"))
-)
-print(f"latest_workouts count: {latest_workouts.count()}")
-
-df_latest = (
-    result_df
-    .join(
-        latest_workouts,
-        (result_df.workout_id == latest_workouts.workout_id) &
-        (result_df.updated_at == latest_workouts.latest_updated_at),
-        "inner"
-    )
-    .drop(latest_workouts.workout_id)
-)
-print(f"df_latest count: {df_latest.count()}")
+from pyspark.sql import functions as F
+from pyspark.sql.window import Window
 
 # COMMAND ----------
 
-from pyspark.sql.functions import (
-    sha2,
-    concat_ws,
-    col,
-    to_timestamp,
-    when,
-    current_timestamp,
-    regexp_replace,
+df_stg = spark.table("hen_db.stg.hevy_workout")
+print(f"Staging rows: {df_stg.count()}")
+print(f"Distinct workout_id: {df_stg.select('workout_id').distinct().count()}")
+
+w = Window.partitionBy("workout_id")
+
+df_flagged = df_stg.withColumn(
+    "has_delete_event",
+    F.max(F.when(F.col("event_type") == "deleted", 1).otherwise(0)).over(w)
 )
 
-cleaned_df = (
-    df_latest.select(
-        col("workout_id"),
-        col("workout_title"),
-        to_timestamp(col("start_time")).alias("start_time"),
-        to_timestamp(col("end_time")).alias("end_time"),
-        to_timestamp(col("created_at")).alias("created_at"),
-        to_timestamp(col("updated_at")).alias("updated_at"),
-        col("exercise_index"),
-        col("exercise_title"),
-        col("set_index"),
-        col("weight_kg"),
-        col("reps"),
-        col("distance_meters"),
-        col("duration_seconds"),
-        when(col("exercise_title") == "Running", True)
-        .otherwise(False)
-        .alias("is_running"),
-        when(col("exercise_title") != "Running", True)
-        .otherwise(False)
-        .alias("is_workout"),
-    )
-    .withColumn(
-        "date_key",
-        regexp_replace(col("start_time").cast("date").cast("string"), "-", "").cast(
-            "int"
-        ),
-    )
-    .withColumn("insert_ts", current_timestamp())
-    .withColumn(
-        "row_hash",
-        sha2(
-            concat_ws(
-                "||",
-                col("workout_id"),
-                col("workout_title"),
-                col("start_time"),
-                col("end_time"),
-                col("updated_at"),
-                col("exercise_title"),
-                col("exercise_index"),
-                col("set_index"),
-                col("weight_kg"),
-                col("reps"),
-                col("is_running"),
-                col("is_workout"),
-            ),
-            256,
-        ),
-    )
-)
+print(f"Rows with delete event present: {df_flagged.filter(F.col('has_delete_event') == 1).count()}")
 
-target_table = "hen_db.stg.silver_workout"
-# Create the table if it does not exist
-if not spark.catalog.tableExists(target_table):
-    cleaned_df.write.saveAsTable(target_table)
+df_active = df_flagged.filter(F.col("has_delete_event") == 0).drop("has_delete_event")
 
-# Overwrite the table with new data
-cleaned_df.write.mode("overwrite").insertInto(target_table)
+print(f"Active rows: {df_active.count()}")
 
-print(f"Inserted rows count: {cleaned_df.count()}")
+# COMMAND ----------
+
+target_table = "silver_workout"
+tz = "Europe/Copenhagen"
+run_id = log_run(table_name=target_table)
+row_count = 0
+
+try:
+    df_selected = (
+        df_active
+        .withColumn("local_start_time", F.from_utc_timestamp(F.to_timestamp("start_time"), tz))
+        .withColumn("local_end_time", F.from_utc_timestamp(F.to_timestamp("end_time"), tz))
+        .withColumn("local_created_at", F.from_utc_timestamp(F.to_timestamp("created_at"), tz))
+        .withColumn("local_updated_at", F.from_utc_timestamp(F.to_timestamp("updated_at"), tz))
+        .select(
+            "workout_id",
+            "workout_title",
+            "exercise_index",
+            "exercise_title",
+            "set_index",
+            "weight_kg",
+            "reps",
+            "distance_meters",
+            "duration_seconds",
+            "local_start_time",
+            "local_end_time",
+            "local_created_at",
+            "local_updated_at",
+            (F.col("exercise_title") == "Running").alias("is_running"),
+            (F.col("exercise_title") != "Running").alias("is_workout"),
+            F.date_format("local_start_time", "yyyyMMdd").cast("int").alias("date_key"),
+            F.concat(F.lpad(F.hour("local_start_time"), 2, "0"), F.lit("00")).cast("int").alias("time_key"),
+            F.from_utc_timestamp(F.current_timestamp(), tz).alias("insert_ts"),
+        )
+    )
+    
+    (
+        df_selected
+        .write
+        .mode("overwrite")
+        .saveAsTable(f"hen_db.stg.{target_table}")
+    )
+
+    row_count = df_selected.count()
+
+    log_run(
+        table_name=target_table,
+        run_id=run_id,
+        row_count=row_count,
+        run_status="SUCCESS",
+    )
+
+    print("[Silver] completed successfully")
+    print(f"[Silver] Rows inserted: {row_count}")
+
+except Exception as e:
+    print(f"[Silver] Ingestion FAILED: {e}")
+    log_run(
+        table_name=target_table,
+        run_id=run_id,
+        row_count=row_count,
+        run_status="FAILED",
+        error_message=str(e),
+    )
+    raise
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC select *
+# MAGIC from hen_db.stg.meta_log
+# MAGIC order by end_time desc
