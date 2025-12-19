@@ -93,7 +93,7 @@ try:
     )
 
     print("[Silver] completed successfully")
-    print(f"[Silver] Rows inserted: {row_count}")
+    print(f"[Silver] rows inserted: {row_count}")
 
 except Exception as e:
     print(f"[Silver] Ingestion FAILED: {e}")
