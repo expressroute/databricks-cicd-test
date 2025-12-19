@@ -1,4 +1,4 @@
---create or replace view hen_db.stg.vw_silver_workout as
+create or replace view hen_db.stg.vw_silver_workout as
 select
   w.workout_id,
   w.workout_title,
