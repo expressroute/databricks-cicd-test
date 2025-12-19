@@ -3,6 +3,7 @@ import uuid
 from pyspark.sql.types import *
 from pyspark.sql.functions import current_timestamp
 from datetime import datetime, timedelta
+from datetime import datetime
 
 # COMMAND ----------
 
@@ -57,7 +58,7 @@ meta_log_schema = StructType(
 )
 
 
-def log_run(
+def log_run_OLD(
     table_name: str,
     run_id: str | None = None,
     row_count: int | None = None,
@@ -103,4 +104,60 @@ def log_run(
         """
         )
 
+        return None
+
+# COMMAND ----------
+
+meta_log_schema = StructType(
+    [
+        StructField("run_id", StringType(), False),
+        StructField("table_name", StringType(), False),
+        StructField("run_status", StringType(), False),
+        StructField("row_count", IntegerType(), True),
+        StructField("start_time", TimestampType(), True),
+        StructField("end_time", TimestampType(), True),
+        StructField("error_message", StringType(), True),
+    ]
+)
+
+def log_run(
+    table_name: str,
+    run_id: str = None,
+    row_count: int = None,
+    run_status: str = "RUNNING",
+    error_message: str = None,
+):
+    if run_id is None:
+        run_id = str(uuid.uuid4())
+        df = spark.createDataFrame(
+            [
+                (
+                    run_id,
+                    table_name,
+                    run_status,
+                    row_count,
+                    None,
+                    None,
+                    error_message,
+                )
+            ],
+            schema=meta_log_schema,
+        ).withColumn("start_time", current_timestamp())
+        df.write.format("delta").mode("append").saveAsTable("hen_db.stg.meta_log")
+        return run_id
+    else:
+        end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        set_clause = (
+            f"row_count = {row_count if row_count is not None else 'NULL'}, "
+            f"run_status = '{run_status}', "
+            f"end_time = '{end_time}', "
+            f"error_message = '{error_message}'"
+        )
+        spark.sql(
+            f"""
+            UPDATE hen_db.stg.meta_log
+            SET {set_clause}
+            WHERE run_id = '{run_id}'
+            """
+        )
         return None
