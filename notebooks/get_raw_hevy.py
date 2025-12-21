@@ -11,7 +11,7 @@ import requests
 from pyspark.sql.types import *
 from pyspark.sql import Row
 from pyspark.sql.window import Window
-from pyspark.sql.functions import row_number, col, current_timestamp
+from pyspark.sql.functions import row_number, col, current_timestamp, from_utc_timestamp
 from pyspark.sql.functions import col, from_json, explode_outer
 import json
 
@@ -69,7 +69,7 @@ def build_raw_df(events: list[dict]):
     ]
 
     return spark.createDataFrame(rows_raw).withColumn(
-        "ingested_ts", current_timestamp()
+        "ingested_ts", from_utc_timestamp(current_timestamp(), "Europe/Copenhagen")
     )
 
 # COMMAND ----------

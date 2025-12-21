@@ -34,6 +34,6 @@ targets:
     mode: production
     variables:
       env: prd
-      job_pause_status: UNPAUSED
+      job_pause_status: PAUSED
     workspace:
       root_path: /Shared/prd/${var.project_name}
