@@ -11,7 +11,7 @@ import requests
 from pyspark.sql.types import *
 from pyspark.sql import Row
 from pyspark.sql.window import Window
-from pyspark.sql.functions import row_number, col, current_timestamp, from utc_timestamp
+from pyspark.sql.functions import row_number, col, current_timestamp, from_utc_timestamp
 from pyspark.sql.functions import col, from_json, explode_outer
 import json
 
