@@ -1,9 +1,8 @@
 # Databricks notebook source
 import uuid
 from pyspark.sql.types import *
-from pyspark.sql.functions import current_timestamp
+from pyspark.sql.functions import current_timestamp, from_utc_timestamp
 from datetime import datetime, timedelta
-from datetime import datetime
 
 # COMMAND ----------
 
@@ -142,11 +141,16 @@ def log_run(
                 )
             ],
             schema=meta_log_schema,
-        ).withColumn("start_time", current_timestamp())
+        ).withColumn(
+            "start_time",
+            from_utc_timestamp(current_timestamp(), "Europe/Copenhagen")
+        )
         df.write.format("delta").mode("append").saveAsTable("hen_db.stg.meta_log")
         return run_id
     else:
-        end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        end_time = spark.sql(
+            "SELECT from_utc_timestamp(current_timestamp(), 'Europe/Copenhagen') AS end_time"
+        ).collect()[0]["end_time"]
         set_clause = (
             f"row_count = {row_count if row_count is not None else 'NULL'}, "
             f"run_status = '{run_status}', "
