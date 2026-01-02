@@ -11,24 +11,8 @@ select
   d.month_name,
   d.year,
   t.hour_24,
-  t.hour_label,
-  format_string(
-    '%02d:00',
-    cast(floor(avg(t.hour_24) over ()) as int)
-  ) as avg_starttime
+  t.minute
 from hen_db.stg.silver_workout w
 inner join hen_db.stg.silver_date d on w.date_key = d.date_key
 inner join hen_db.stg.silver_dim_time t on w.time_key = t.time_key
 where is_workout = true
-group by
-  w.workout_id,
-  w.workout_title,
-  w.local_start_time,
-  w.local_end_time,
-  d.date,
-  d.day_name,
-  d.week_of_year,
-  d.month_name,
-  d.year,
-  t.hour_24,
-  t.hour_label
