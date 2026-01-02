@@ -10,8 +10,7 @@ select
   d.week_of_year,
   d.month_name,
   d.year,
-  t.hour_24,
-  t.minute
+  t.hour_24
 from hen_db.stg.silver_workout w
 inner join hen_db.stg.silver_date d on w.date_key = d.date_key
 inner join hen_db.stg.silver_dim_time t on w.time_key = t.time_key
