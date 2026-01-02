@@ -13,31 +13,44 @@ target_table = "silver_workout"
 
 # COMMAND ----------
 
-# Load staging data
-df_stg = spark.table(f"hen_db.stg.{source_table}")
-print(f"Distinct workout_id: {df_stg.select('workout_id').distinct().count()}")
-print(f"Staging rows: {df_stg.count()}")
-
-# Flag workout_ids that have been deleted
-w_delete = Window.partitionBy("workout_id")
-df_flagged = df_stg.withColumn(
-    "has_delete_event",
-    F.max((F.col("event_type") == "deleted").cast("int")).over(w_delete)
+df_base = spark.table(f"hen_db.stg.{source_table}")
+print(
+    f"Distinct workout_ids: {df_base.select('workout_id').distinct().count()}"
 )
-print(f"Deleted rows: {df_flagged.filter(F.col('has_delete_event') == 1).count()}")
 
-# Keep only active (non-deleted) workout_ids
-df_active = df_flagged.filter(F.col("has_delete_event") == 0).drop("has_delete_event")
+# workout_ids to delete (any delete timestamp => delete the whole workout_id)
+df_deleted_ids = (
+    df_base.filter(F.col("deleted_at").isNotNull()).select("workout_id").distinct()
+)
+print(f"Deleted workout_ids: {df_deleted_ids.count()}")
 
-# For each workout_id, keep all rows with the latest updated_at (handles ties)
 w_latest = Window.partitionBy("workout_id").orderBy(F.col("updated_at").desc())
-df_latest_active = (
-    df_active
-    .withColumn("rank", F.rank().over(w_latest))
-    .filter(F.col("rank") == 1)
-    .drop("rank")
+
+df_selected = (
+    df_base.join(df_deleted_ids, on="workout_id", how="left_anti")
+    .select(
+        "event_type",
+        "workout_id",
+        "workout_title",
+        "start_time",
+        "end_time",
+        "updated_at",
+        "created_at",
+        "deleted_at",
+        F.when(F.col("exercise_title") == "Running", F.col("distance_meters"))
+        .otherwise(0)
+        .alias("distance_meters"),
+        F.when(F.col("exercise_title") == "Running", F.col("duration_seconds"))
+        .otherwise(0)
+        .alias("duration_seconds"),
+    )
+    .withColumn("rn", F.row_number().over(w_latest))
+    .filter(F.col("rn") == 1)
+    .drop("rn")
+    .dropDuplicates()
 )
-print(f"Active rows: {df_latest_active.count()}")
+
+print(f"Selected rows: {df_selected.count()}")
 
 # COMMAND ----------
 
@@ -48,8 +61,8 @@ run_id = log_run(table_name=target_table)
 row_count = 0
 
 try:
-    df_selected = (
-        df_latest_active
+    df_stg = (
+        df_selected
         .withColumn("local_start_time", F.from_utc_timestamp(F.to_timestamp("start_time"), tz))
         .withColumn("local_end_time", F.from_utc_timestamp(F.to_timestamp("end_time"), tz))
         .withColumn("local_created_at", F.from_utc_timestamp(F.to_timestamp("created_at"), tz))
@@ -57,33 +70,28 @@ try:
         .select(
             "workout_id",
             "workout_title",
-            "exercise_index",
-            "exercise_title",
-            "set_index",
-            "weight_kg",
-            "reps",
             "distance_meters",
             "duration_seconds",
             "local_start_time",
             "local_end_time",
             "local_created_at",
             "local_updated_at",
-            (F.col("exercise_title") == "Running").alias("is_running"),
-            (F.col("exercise_title") != "Running").alias("is_workout"),
+            (F.col("workout_title") == "Run").alias("is_running"),
+            (F.col("workout_title") != "Run").alias("is_workout"),
             F.date_format("local_start_time", "yyyyMMdd").cast("int").alias("date_key"),
-            F.concat(F.lpad(F.hour("local_start_time"), 2, "0"), F.lit("00")).cast("int").alias("time_key"),
+            F.format_string("%02d%02d",F.hour("local_start_time"),F.minute("local_start_time")).cast("int").alias("time_key"),
             F.from_utc_timestamp(F.lit(batch_ts), tz).alias("insert_ts"),
         )
     )
     
     (
-        df_selected
+        df_stg
         .write
         .mode("overwrite")
         .saveAsTable(f"hen_db.stg.{target_table}")
     )
 
-    row_count = df_selected.count()
+    row_count = df_stg.count()
 
     log_run(
         table_name=target_table,
