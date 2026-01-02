@@ -18,7 +18,7 @@ resources:
             - task_key: hevy_raw_workout_events
           run_if: NONE_FAILED
           notebook_task:
-            notebook_path: "../notebooks/get_stg_hevy.py"
+            notebook_path: "../notebooks/load_stg_hevy.py"
             source: WORKSPACE
         - task_key: hevy_load_silver
           depends_on:
