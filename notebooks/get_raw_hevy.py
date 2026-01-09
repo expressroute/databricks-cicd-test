@@ -74,7 +74,7 @@ if not events:
     log_run(
         table_name=target_table,
         run_id=run_id,
-        row_count=row_count,
+        row_count=0,
         run_status="SUCCESS",
     )
     dbutils.notebook.exit("No new events")
