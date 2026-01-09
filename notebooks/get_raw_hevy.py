@@ -63,7 +63,6 @@ def get_all_workout_events(since: str, page_size: int = 10) -> list[dict]:
 # COMMAND ----------
 
 run_id = log_run(table_name=target_table)
-row_count = 0
 
 wm = get_watermark("raw", target_table)
 print(f"Starting ingestion. Watermark: {wm}")
@@ -72,7 +71,12 @@ events = get_all_workout_events(since=wm)
 print(f"Retrieved {len(events)} events")
 
 if not events:
-    print("No new events. Exiting notebook.")
+    log_run(
+        table_name=target_table,
+        run_id=run_id,
+        row_count=row_count,
+        run_status="SUCCESS",
+    )
     dbutils.notebook.exit("No new events")
 
 # COMMAND ----------
