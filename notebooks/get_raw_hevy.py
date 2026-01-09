@@ -71,7 +71,7 @@ events = get_all_workout_events(since=wm)
 print(f"Retrieved {len(events)} events")
 
 if not events:
-        log_run(
+    log_run(
         table_name=target_table,
         run_id=run_id,
         row_count=row_count,
