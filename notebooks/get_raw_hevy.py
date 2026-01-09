@@ -62,70 +62,64 @@ def get_all_workout_events(since: str, page_size: int = 10) -> list[dict]:
 
 # COMMAND ----------
 
-def build_raw_df(events: list[dict]):
-    rows_raw = [
-        Row(event_type=e.get("type"), json_payload=json.dumps(e, ensure_ascii=False))
-        for e in events
-    ]
-
-    return spark.createDataFrame(rows_raw).withColumn(
-        "ingested_ts", from_utc_timestamp(current_timestamp(), "Europe/Copenhagen")
-    )
-
-# COMMAND ----------
-
 run_id = log_run(table_name=target_table)
 row_count = 0
 
+wm = get_watermark("raw", target_table)
+print(f"Starting ingestion. Watermark: {wm}")
+
+events = get_all_workout_events(since=wm)
+print(f"Retrieved {len(events)} events")
+
+if not events:
+    print("No new events. Exiting notebook.")
+    dbutils.notebook.exit("No new events")
+
+# COMMAND ----------
+
 try:
-    wm = get_watermark("raw", target_table)
-    print(f"Starting ingestion. Watermark: {wm}")
+    df_raw = spark.createDataFrame(
+        [
+            Row(
+                event_type=e.get("type"),
+                json_payload=json.dumps(e, ensure_ascii=False),
+            )
+            for e in events
+        ]
+    ).withColumn(
+        "ingested_ts",
+        from_utc_timestamp(current_timestamp(), "Europe/Copenhagen"),
+    )
 
-    events = get_all_workout_events(since=wm)
-    print(f"Retrieved {len(events)} events")
+    row_count = df_raw.count()
+    print(f"Writing {row_count} rows to target table")
 
-    if not events:
-        print("No new events")
+    (
+        df_raw.write.format("delta")
+        .mode("append")
+        .saveAsTable(f"hen_db.raw.{target_table}")
+    )
 
-        log_run(
-            table_name=target_table,
-            run_id=run_id,
-            row_count=0,
-            run_status="SUCCESS",
-        )
+    # Find the highest timestamp from updated_at and deleted_at in all events
+    max_ts = max(
+        [
+            ts
+            for e in events
+            for ts in [e.get("workout", {}).get("updated_at"), e.get("deleted_at")]
+            if ts
+        ],
+        default=None,
+    )
 
-    else:
-        df_raw = build_raw_df(events)
-        row_count = df_raw.count()
+    # Update watermark
+    update_watermark(schema_name="raw", table_name=target_table, watermark_ts=max_ts)
 
-        (
-            df_raw.write.format("delta")
-            .mode("append")
-            .saveAsTable(f"hen_db.raw.{target_table}")
-        )
-        print(f"Writing {row_count} rows to target table")
-
-        # Find the highest timestamp among workout.updated_at and top-level deleted_at in all events
-        max_ts = max(
-            [
-                ts
-                for e in events
-                for ts in [e.get("workout", {}).get("updated_at"), e.get("deleted_at")]
-                if ts
-            ],
-            default=None,
-        )
-
-        update_watermark(
-            schema_name="raw", table_name=target_table, watermark_ts=max_ts
-        )
-
-        log_run(
-            table_name=target_table,
-            run_id=run_id,
-            row_count=row_count,
-            run_status="SUCCESS",
-        )
+    log_run(
+        table_name=target_table,
+        run_id=run_id,
+        row_count=row_count,
+        run_status="SUCCESS",
+    )
 
     print("Ingestion completed successfully")
 
