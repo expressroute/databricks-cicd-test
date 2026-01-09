@@ -10,7 +10,7 @@ def get_watermark(schema_name: str, table_name: str) -> str | None:
     df = spark.sql(
         f"""
         SELECT watermark_ts
-        FROM hen_db.stg.meta_watermark
+        FROM hen_db.meta.watermark
         WHERE schema_name = '{schema_name}'
           AND table_name = '{table_name}'
         ORDER BY watermark_ts DESC
@@ -35,75 +35,12 @@ def update_watermark(schema_name: str, table_name: str, watermark_ts):
 
     spark.sql(
         f"""
-        UPDATE hen_db.stg.meta_watermark
+        UPDATE hen_db.meta.watermark
         SET watermark_ts = '{new_watermark_ts}'
         WHERE schema_name = '{schema_name}'
           AND table_name = '{table_name}'
         """
     )
-
-# COMMAND ----------
-
-meta_log_schema = StructType(
-    [
-        StructField("run_id", StringType(), False),
-        StructField("table_name", StringType(), False),
-        StructField("run_status", StringType(), False),
-        StructField("row_count", IntegerType(), True),
-        StructField("start_time", TimestampType(), True),
-        StructField("end_time", TimestampType(), True),
-        StructField("error_message", StringType(), True),
-    ]
-)
-
-
-def log_run_OLD(
-    table_name: str,
-    run_id: str | None = None,
-    row_count: int | None = None,
-    run_status: str | None = None,
-    error_message: str | None = None,
-) -> str | None:
-
-    # START
-    if run_id is None:
-        run_id = str(uuid.uuid4())
-
-        df = spark.createDataFrame(
-            [(run_id, table_name, "RUNNING", None, None, None, None)],
-            schema=meta_log_schema,
-        ).withColumn("start_time", current_timestamp())
-
-        (df.write.format("delta").mode("append").saveAsTable("hen_db.stg.meta_log"))
-
-        return run_id
-
-    # END
-    else:
-        # normalize error message inline
-        clean_error = None
-        if error_message:
-            msg = str(error_message)
-            msg = msg.split("\n\n", 1)[0]  # keep first paragraph
-            msg = " ".join(msg.splitlines())  # force single line
-            clean_error = msg[:500]  # hard limit
-
-            # escape quotes for SQL
-            clean_error = clean_error.replace("'", "''")
-
-        spark.sql(
-            f"""
-            UPDATE hen_db.stg.meta_log
-            SET
-                row_count = {row_count},
-                run_status = '{run_status}',
-                end_time = current_timestamp(),
-                error_message = {f"'{clean_error}'" if clean_error else "NULL"}
-            WHERE run_id = '{run_id}'
-        """
-        )
-
-        return None
 
 # COMMAND ----------
 
@@ -145,7 +82,7 @@ def log_run(
             "start_time",
             from_utc_timestamp(current_timestamp(), "Europe/Copenhagen")
         )
-        df.write.format("delta").mode("append").saveAsTable("hen_db.stg.meta_log")
+        df.write.format("delta").mode("append").saveAsTable("hen_db.meta.run_log")
         return run_id
     else:
         end_time = spark.sql(
@@ -159,7 +96,7 @@ def log_run(
         )
         spark.sql(
             f"""
-            UPDATE hen_db.stg.meta_log
+            UPDATE hen_db.meta.run_log
             SET {set_clause}
             WHERE run_id = '{run_id}'
             """

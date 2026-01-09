@@ -1,4 +1,4 @@
-create or replace view hen_db.stg.vw_silver_workout as
+create or replace view hen_db.gold.vw_workout as
 select
   w.workout_id,
   w.workout_title,
@@ -11,7 +11,19 @@ select
   d.month_name,
   d.year,
   t.hour_24
-from hen_db.stg.silver_workout w
-inner join hen_db.stg.silver_date d on w.date_key = d.date_key
-inner join hen_db.stg.silver_dim_time t on w.time_key = t.time_key
+from hen_db.silver.workout w
+inner join hen_db.silver.dim_date d on w.date_key = d.date_key
+inner join hen_db.silver.dim_time t on w.time_key = t.time_key
 where is_workout = true
+
+
+/*
+CREATE CATALOG IF NOT EXISTS hen_db;
+
+CREATE SCHEMA IF NOT EXISTS hen_db.meta;
+CREATE SCHEMA IF NOT EXISTS hen_db.raw;
+CREATE SCHEMA IF NOT EXISTS hen_db.stg;
+CREATE SCHEMA IF NOT EXISTS hen_db.silver;
+CREATE SCHEMA IF NOT EXISTS hen_db.gold;
+
+*/
