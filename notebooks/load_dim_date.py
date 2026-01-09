@@ -5,7 +5,7 @@ from pyspark.sql import functions as F
 # ---- Parameters ----
 start_date = "2024-01-01"
 end_date   = "2035-12-31"
-table_name = "hen_db.stg.silver_date"
+table_name = "hen_db.silver.dim_date"
 
 # ---- Generate date dimension (always) ----
 df_date = (

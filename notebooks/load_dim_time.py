@@ -1,7 +1,7 @@
 # Databricks notebook source
 from pyspark.sql import functions as F
 
-table_name = "hen_db.stg.silver_dim_time"
+table_name = "hen_db.silver.dim_time"
 
 dim_time = (
     spark.range(0, 24 * 60)

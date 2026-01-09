@@ -9,7 +9,7 @@ from pyspark.sql.window import Window
 # COMMAND ----------
 
 source_table ="hevy_workout"
-target_table = "silver_workout"
+target_table = "workout"
 
 # COMMAND ----------
 
@@ -18,7 +18,7 @@ print(
     f"Distinct workout_ids: {df_base.select('workout_id').distinct().count()}"
 )
 
-# workout_ids to delete (any delete timestamp => delete the whole workout_id)
+# find workout_ids that have been deleted
 df_deleted_ids = (
     df_base.filter(F.col("deleted_at").isNotNull()).select("workout_id").distinct()
 )
@@ -37,12 +37,8 @@ df_selected = (
         "updated_at",
         "created_at",
         "deleted_at",
-        F.when(F.col("exercise_title") == "Running", F.col("distance_meters"))
-        .otherwise(0)
-        .alias("distance_meters"),
-        F.when(F.col("exercise_title") == "Running", F.col("duration_seconds"))
-        .otherwise(0)
-        .alias("duration_seconds"),
+        F.when(F.col("exercise_title") == "Running", F.col("distance_meters")).otherwise(0).alias("distance_meters"),
+        F.when(F.col("exercise_title") == "Running", F.col("duration_seconds")).otherwise(0).alias("duration_seconds"),
     )
     .withColumn("rn", F.row_number().over(w_latest))
     .filter(F.col("rn") == 1)
@@ -54,7 +50,6 @@ print(f"Selected rows: {df_selected.count()}")
 
 # COMMAND ----------
 
-target_table = "silver_workout"
 tz = "Europe/Copenhagen"
 batch_ts = datetime.now()
 run_id = log_run(table_name=target_table)
@@ -88,7 +83,7 @@ try:
         df_stg
         .write
         .mode("overwrite")
-        .saveAsTable(f"hen_db.stg.{target_table}")
+        .saveAsTable(f"hen_db.silver.{target_table}")
     )
 
     row_count = df_stg.count()
@@ -100,11 +95,10 @@ try:
         run_status="SUCCESS",
     )
 
-    print("[Silver] completed successfully")
-    print(f"[Silver] rows inserted: {row_count}")
+    print(f"Completed. Rows inserted: {row_count}")
 
 except Exception as e:
-    print(f"[Silver] Ingestion FAILED: {e}")
+    print(f"Ingestion FAILED: {e}")
     log_run(
         table_name=target_table,
         run_id=run_id,

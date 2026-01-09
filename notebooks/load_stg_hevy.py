@@ -63,21 +63,19 @@ event_payload_schema = StructType([
 
 df_raw = spark.table(f"hen_db.raw.{source_table}")
 
-df_parsed = (
-    df_raw
-    .withColumn("event", from_json(col("json_payload"), event_payload_schema))
-    .select(
-        col("event.type").alias("event_type"),
-        col("event.id").alias("event_id"),
-        col("event.deleted_at").alias("event_deleted_at"),
-        col("event.workout").alias("workout"),
-    )
+df_parsed = df_raw.withColumn(
+    "event", from_json(col("json_payload"), event_payload_schema)
+).select(
+    col("event.type").alias("event_type"),
+    col("event.id").alias("event_id"),
+    col("event.deleted_at").alias("event_deleted_at"),
+    col("event.workout").alias("workout"),
 )
 
 # COMMAND ----------
 
 stg_wm = get_watermark("stg", target_table)
-print(f"[STG] Starting ingestion. Latest watermark: {stg_wm}")
+print(f"Latest watermark: {stg_wm}")
 
 df_events = df_parsed
 
@@ -88,6 +86,21 @@ if stg_wm:
             col("event_deleted_at")
         ) > stg_wm
     )
+
+# COMMAND ----------
+
+run_id = log_run(table_name=target_table)
+
+events_cnt = df_events.count()
+
+if events_cnt == 0:
+    log_run(
+            table_name=target_table,
+            run_id=run_id,
+            row_count=0,
+            run_status="SUCCESS",
+        )
+    dbutils.notebook.exit("No new records to process, exiting.")
 
 # COMMAND ----------
 
@@ -125,52 +138,34 @@ df_stg_full = (
 
 # COMMAND ----------
 
-run_id = log_run(table_name=target_table)
-row_count = 0
-
 try:
-    if not df_stg_full.head(1):
-        print("[STG] No new records to process")
+    row_count = df_stg_full.count()
+    print(f"Writing {row_count} rows to table")
 
-        log_run(
-            table_name=target_table,
-            run_id=run_id,
-            row_count=0,
-            run_status="SUCCESS",
-        )
+    (
+        df_stg_full.write.format("delta")
+        .mode("append")
+        .saveAsTable(f"hen_db.stg.{target_table}")
+    )
 
-    else:
-        row_count = df_stg_full.count()
-        print(f"[STG] Writing {row_count} rows to table")
+    # derive new watermark from data: highest of updated_at or deleted_at
+    max_ts = df_stg_full.selectExpr(
+        "max(greatest(updated_at, deleted_at)) as max_ts"
+    ).collect()[0]["max_ts"]
 
-        (
-            df_stg_full.write.format("delta")
-            .mode("append")
-            .saveAsTable(f"hen_db.stg.{target_table}")
-        )
+    update_watermark(schema_name="stg", table_name=target_table, watermark_ts=max_ts)
 
-        # derive new watermark from data: highest of updated_at or deleted_at
-        max_ts = (
-            df_stg_full
-            .selectExpr("max(greatest(updated_at, deleted_at)) as max_ts")
-            .collect()[0]["max_ts"]
-        )
+    log_run(
+        table_name=target_table,
+        run_id=run_id,
+        row_count=row_count,
+        run_status="SUCCESS",
+    )
 
-        update_watermark(
-            schema_name="stg", table_name=target_table, watermark_ts=max_ts
-        )
-
-        log_run(
-            table_name=target_table,
-            run_id=run_id,
-            row_count=row_count,
-            run_status="SUCCESS",
-        )
-
-    print("[STG] Ingestion completed successfully")
+    print("Ingestion completed successfully")
 
 except Exception as e:
-    print(f"[STG] Ingestion FAILED: {e}")
+    print(f"Ingestion FAILED: {e}")
 
     log_run(
         table_name=target_table,
